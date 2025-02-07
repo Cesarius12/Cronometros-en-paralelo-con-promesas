@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Promesas en Paralelo</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            margin: 20px;
+        }
+
+        h1 {
+            color: #333;
+        }
+
+        .cronometros {
+            display: flex;
+            gap: 20px;
+            margin: 20px 0;
+        }
+
+        .cronometro {
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            background-color: #f9f9f9;
+            min-width: 200px;
+            text-align: center;
+        }
+
+        .cronometro h3 {
+            margin: 0 0 10px 0;
+            color: #007bff;
+        }
+
+        .tiempo {
+            font-size: 24px;
+            font-weight: bold;
+            color: #333;
+        }
+
+        #resultados {
+            margin: 20px 0;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            background-color: #f9f9f9;
+        }
+
+        #resultados h2 {
+            color: #333;
+            margin-bottom: 15px;
+        }
+
+        #resultados p {
+            margin: 10px 0;
+            padding: 5px;
+            background-color: #fff;
+            border-left: 3px solid #007bff;
+        }
+
+        #resultados .completado {
+            color: #28a745;
+            font-weight: bold;
+            border-left: 3px solid #28a745;
+        }
+
+        #resultados .error {
+            color: #dc3545;
+            border-left: 3px solid #dc3545;
+        }
+
+        .completado {
+            background-color: #d4edda !important;
+            border-color: #28a745 !important;
+        }
+
+        .btn-inicio {
+            background-color: #007bff;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            font-size: 16px;
+            cursor: pointer;
+            margin: 20px 0;
+            transition: background-color 0.3s;
+        }
+
+        .btn-inicio:hover {
+            background-color: #0056b3;
+        }
+
+        .btn-inicio:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+        }
+    </style>
+</head>
+<body>
+    <h1>Procesamiento de Promesas en Paralelo</h1>
+    <p>Presiona el botón para iniciar los cronómetros:</p>
+
+    <button id="btnIniciar" class="btn-inicio">Iniciar Cronómetros</button>
+
+    <div class="cronometros">
+        <div id="cronometro1" class="cronometro">
+            <h3>Temporizador 1</h3>
+            <div class="tiempo">2.000</div>
+        </div>
+        <div id="cronometro2" class="cronometro">
+            <h3>Temporizador 2</h3>
+            <div class="tiempo">3.000</div>
+        </div>
+        <div id="cronometro3" class="cronometro">
+            <h3>Temporizador 3</h3>
+            <div class="tiempo">1.500</div>
+        </div>
+    </div>
+
+    <script>
+        function actualizarCronometro(id, tiempoInicial) {
+            const elemento = document.querySelector(`#cronometro${id} .tiempo`);
+            let tiempoRestante = tiempoInicial;
+            
+            const intervalo = setInterval(() => {
+                tiempoRestante -= 10;
+                if (tiempoRestante <= 0) {
+                    clearInterval(intervalo);
+                    elemento.textContent = "0.000";
+                    document.getElementById(`cronometro${id}`).classList.add('completado');
+                } else {
+                    elemento.textContent = (tiempoRestante / 1000).toFixed(3);
+                }
+            }, 10);
+        }
+
+        const crearTemporizador = (tiempo, valor) => {
+            actualizarCronometro(valor, tiempo);
+            return new Promise(resolve => {
+                setTimeout(() => {
+                    console.log(`Temporizador ${valor} completado después de ${tiempo}ms`);
+                    resolve(`Temporizador ${valor} completado después de ${tiempo}ms`);
+                }, tiempo);
+            });
+        };
+
+        async function ejecutarTemporizadores() {
+            try {
+                document.getElementById('btnIniciar').disabled = true;
+                
+                console.log('Iniciando temporizadores...');
+                
+                const resultadosDiv = document.createElement('div');
+                resultadosDiv.id = 'resultados';
+                document.body.appendChild(resultadosDiv);
+                resultadosDiv.innerHTML = '<h2>Resultados:</h2>';
+                
+                const promesas = [
+                    crearTemporizador(2000, 1),
+                    crearTemporizador(3000, 2),
+                    crearTemporizador(1500, 3)
+                ];
+
+                const resultados = await Promise.all(promesas);
+
+                resultados.forEach(resultado => {
+                    console.log(resultado);
+                    resultadosDiv.innerHTML += `<p>${resultado}</p>`;
+                });
+
+                resultadosDiv.innerHTML += '<p class="completado">¡Todos los temporizadores han finalizado!</p>';
+                
+                document.getElementById('btnIniciar').disabled = false;
+
+            } catch (error) {
+                console.error('Error:', error);
+                document.getElementById('resultados').innerHTML = `<p class="error">Error: ${error}</p>`;
+                document.getElementById('btnIniciar').disabled = false;
+            }
+        }
+
+        document.getElementById('btnIniciar').addEventListener('click', function() {
+            const resultadosAnteriores = document.getElementById('resultados');
+            if (resultadosAnteriores) {
+                resultadosAnteriores.remove();
+            }
+            
+            document.querySelectorAll('.cronometro').forEach(cronometro => {
+                cronometro.classList.remove('completado');
+            });
+            document.querySelector('#cronometro1 .tiempo').textContent = '2.000';
+            document.querySelector('#cronometro2 .tiempo').textContent = '3.000';
+            document.querySelector('#cronometro3 .tiempo').textContent = '1.500';
+            
+            ejecutarTemporizadores();
+        });
+    </script>
+</body>
+</html>
+
